@@ -27,6 +27,7 @@
     </aside>
 
     <main class="content">
+      <!-- DASHBOARD -->
       <section id="view-dashboard" class="view visible">
         <header class="view-header">
           <h1>Dashboard</h1>
@@ -62,8 +63,20 @@
             <div class="card-body"><ul id="riskList" class="mini-list"></ul></div>
           </div>
         </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h2>Current PI Status</h2></div>
+            <div class="card-body"><div id="piPie"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2>Current Sprint Status</h2></div>
+            <div class="card-body"><div id="sprintPie"></div></div>
+          </div>
+        </div>
       </section>
 
+      <!-- BACKLOG -->
       <section id="view-backlog" class="view">
         <header class="view-header">
           <h1>Backlog</h1>
@@ -75,7 +88,7 @@
 
         <div id="backlogListMode" class="card">
           <table class="table">
-            <thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Due</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Planned</th><th>Actual End</th><th>Actions</th></tr></thead>
             <tbody id="backlogTableBody"></tbody>
           </table>
         </div>
@@ -88,8 +101,30 @@
           <div class="kanban-col" data-status="done"><h3>Done</h3><div class="kanban-drop" id="col-done"></div></div>
           <div class="kanban-col" data-status="cancelled"><h3>Cancelled</h3><div class="kanban-drop" id="col-cancelled"></div></div>
         </div>
+
+        <!-- Task Modal -->
+        <div id="taskModal" class="modal hidden">
+          <div class="modal-panel">
+            <h3 id="taskModalTitle">New Item</h3>
+            <div class="modal-grid">
+              <label>Title<input id="m_title"></label>
+              <label>Type<select id="m_type"><option>task</option><option>bug</option><option>dep</option><option>story</option></select></label>
+              <label>Status<select id="m_status"><option>backlog</option><option>to-do</option><option>in progress</option><option>blocked</option><option>done</option><option>cancelled</option></select></label>
+              <label>Priority<select id="m_priority"><option>low</option><option selected>medium</option><option>high</option></select></label>
+              <label>Planned Start<input id="m_planned_start" placeholder="YYYY-MM-DD"></label>
+              <label>Planned End<input id="m_planned_end" placeholder="YYYY-MM-DD"></label>
+              <label>Actual End<input id="m_actual_end" placeholder="YYYY-MM-DD"></label>
+              <label>Dependencies (IDs, comma)<input id="m_deps" placeholder="e.g. 1,2"></label>
+            </div>
+            <div class="modal-actions">
+              <button id="taskSave" class="primary">Save</button>
+              <button id="taskCancel">Cancel</button>
+            </div>
+          </div>
+        </div>
       </section>
 
+      <!-- PIs & Sprints -->
       <section id="view-pis" class="view">
         <header class="view-header">
           <h1>Project Increments & Sprints</h1>
@@ -128,6 +163,7 @@
         </div>
       </section>
 
+      <!-- GANTT -->
       <section id="view-gantt" class="view">
         <header class="view-header"><h1>Interactive Gantt</h1></header>
         <div class="card">
@@ -142,10 +178,15 @@
             <input id="ganttSearch" placeholder="Highlight by text…">
             <button id="refreshGantt">Refresh</button>
           </div>
+          <div class="gantt-bands">
+            <div id="band-pi" class="gantt-band"></div>
+            <div id="band-sprint" class="gantt-band"></div>
+          </div>
           <div id="ganttCanvas" class="gantt-canvas"></div>
         </div>
       </section>
 
+      <!-- RISKS -->
       <section id="view-risks" class="view">
         <header class="view-header">
           <h1>Risk Register</h1>
@@ -159,6 +200,7 @@
         </div>
       </section>
 
+      <!-- AUTOMATIONS -->
       <section id="view-automations" class="view">
         <header class="view-header"><h1>Automations</h1></header>
         <div class="grid-2">

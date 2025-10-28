@@ -17,6 +17,14 @@ def get_conn():
     conn.row_factory = sqlite3.Row
     return conn
 
+def ensure_column(table, col, decl):
+    conn = get_conn(); cur = conn.cursor()
+    cols = [r[1] for r in cur.execute(f"PRAGMA table_info({table})").fetchall()]
+    if col not in cols:
+        cur.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
+        conn.commit()
+    conn.close()
+
 def init_db():
     conn = get_conn()
     cur = conn.cursor()
@@ -92,6 +100,11 @@ def init_db():
     conn.commit()
     conn.close()
 
+    # lightweight migrations for new fields
+    ensure_column('tasks','planned_start_date','TEXT')
+    ensure_column('tasks','planned_end_date','TEXT')
+    ensure_column('tasks','actual_end_date','TEXT')
+
 class App(BaseHTTPRequestHandler):
     def _send_raw(self, data: bytes, status=200, ctype="application/octet-stream"):
         self.send_response(status)
@@ -154,7 +167,7 @@ class App(BaseHTTPRequestHandler):
             if status:
                 q += " WHERE status=?"
                 params.append(status)
-            q += " ORDER BY priority DESC, due_date ASC"
+            q += " ORDER BY priority DESC, COALESCE(due_date, planned_end_date) ASC"
             rows = cur.execute(q, params).fetchall()
             conn.close()
             return self._send_json([dict(r) for r in rows])
@@ -191,14 +204,12 @@ class App(BaseHTTPRequestHandler):
 
             rows = cur.execute("SELECT * FROM tasks").fetchall()
             tasks = [dict(r) for r in rows]
-            due_this_week = [t for t in tasks if t.get("due_date") and start_week.isoformat() <= t["due_date"] <= end_week.isoformat()]
+            due_this_week = [t for t in tasks if (t.get("due_date") or t.get("planned_end_date")) and start_week.isoformat() <= (t.get("due_date") or t.get("planned_end_date")) <= end_week.isoformat()]
             open_issues = [t for t in tasks if t.get("type") == "bug" and t.get("status") not in ("done", "cancelled")]
             deps = 0
             for t in tasks:
-                try:
-                    deps += len(json.loads(t.get("dependencies") or "[]"))
-                except Exception:
-                    pass
+                try: deps += len(json.loads(t.get("dependencies") or "[]"))
+                except Exception: pass
 
             rrows = cur.execute("SELECT * FROM risks").fetchall()
             risks = [dict(r) for r in rrows]
@@ -238,11 +249,8 @@ class App(BaseHTTPRequestHandler):
 
         if p == "/api/seed":
             conn = get_conn(); cur = conn.cursor()
-            cur.execute("DELETE FROM program_increments")
-            cur.execute("DELETE FROM sprints")
-            cur.execute("DELETE FROM tasks")
-            cur.execute("DELETE FROM risks")
-            cur.execute("DELETE FROM time_off")
+            for t in ("program_increments","sprints","tasks","risks","time_off"):
+                cur.execute(f"DELETE FROM {t}")
 
             cur.execute("INSERT INTO program_increments (name,start_date,end_date) VALUES (?,?,?)", ("PI-1","2025-10-20","2025-12-14"))
             pi1 = cur.lastrowid
@@ -255,14 +263,14 @@ class App(BaseHTTPRequestHandler):
 
             now = now_iso()
             cur.executemany("""
-            INSERT INTO tasks (title,description,status,type,priority,story_points,parent_id,due_date,start_date,end_date,pi_id,sprint_id,assignee,dependencies,created_at,updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT INTO tasks (title,description,status,type,priority,story_points,parent_id,due_date,start_date,end_date,planned_start_date,planned_end_date,actual_end_date,pi_id,sprint_id,assignee,dependencies,created_at,updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, [
-                ("Design Landing UI", "Create the dashboard hero and KPIs", "to-do", "task", "high", 3, None, "2025-11-02", "2025-10-26", None, pi1, 1, "Kameron", "[]", now, now),
-                ("Build Kanban", "Drag-and-drop columns", "in progress", "task", "medium", 5, None, "2025-11-10", "2025-10-27", None, pi1, 2, "Kameron", "[1]", now, now),
-                ("Bug: Gantt zoom glitch", "Zoom past month throws error", "backlog", "bug", "high", 1, None, "2025-11-05", None, None, pi1, 2, "Kameron", "[]", now, now),
-                ("Integrate Outlook Draft", "Weekly report automation", "blocked", "task", "high", 2, None, "2025-11-07", None, None, pi1, 2, "Kameron", "[1,2]", now, now),
-                ("Dependency: Seed Data", "Provide default datasets", "done", "dep", "low", 1, None, "2025-10-28", "2025-10-27", "2025-10-27", pi1, 1, "Kameron", "[]", now, now),
+                ("Design Landing UI", "Create the dashboard hero and KPIs", "to-do", "task", "high", 3, None, "2025-11-02", "2025-10-26", None, "2025-10-26", "2025-11-02", None, pi1, 1, "Kameron", "[]", now, now),
+                ("Build Kanban", "Drag-and-drop columns", "in progress", "task", "medium", 5, None, "2025-11-10", "2025-10-27", None, "2025-10-27", "2025-11-10", None, pi1, 2, "Kameron", "[1]", now, now),
+                ("Bug: Gantt zoom glitch", "Zoom past month throws error", "backlog", "bug", "high", 1, None, "2025-11-05", None, None, None, None, None, pi1, 2, "Kameron", "[]", now, now),
+                ("Integrate Outlook Draft", "Weekly report automation", "blocked", "task", "high", 2, None, "2025-11-07", None, None, None, None, None, pi1, 2, "Kameron", "[1,2]", now, now),
+                ("Dependency: Seed Data", "Provide default datasets", "done", "dep", "low", 1, None, "2025-10-28", "2025-10-27", "2025-10-27", "2025-10-25", "2025-10-27", "2025-10-27", pi1, 1, "Kameron", "[]", now, now),
             ])
 
             cur.executemany("""
@@ -285,12 +293,13 @@ class App(BaseHTTPRequestHandler):
             conn = get_conn(); cur = conn.cursor()
             now = now_iso()
             cur.execute("""
-                INSERT INTO tasks (title,description,status,type,priority,story_points,parent_id,due_date,start_date,end_date,pi_id,sprint_id,assignee,dependencies,created_at,updated_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                INSERT INTO tasks (title,description,status,type,priority,story_points,parent_id,due_date,start_date,end_date,planned_start_date,planned_end_date,actual_end_date,pi_id,sprint_id,assignee,dependencies,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, [
                 data.get("title"), data.get("description"), data.get("status", "backlog"), data.get("type","task"),
                 data.get("priority","medium"), data.get("story_points",0), data.get("parent_id"),
                 data.get("due_date"), data.get("start_date"), data.get("end_date"),
+                data.get("planned_start_date"), data.get("planned_end_date"), data.get("actual_end_date"),
                 data.get("pi_id"), data.get("sprint_id"), data.get("assignee"),
                 json.dumps(data.get("dependencies", [])), now, now
             ])
