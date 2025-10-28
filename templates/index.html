@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Personal PMP Tool</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">⛏️</div>
+        <div class="title">PMP Tool</div>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+        <button class="nav-btn" data-view="backlog">Backlog</button>
+        <button class="nav-btn" data-view="pis">Project Increments</button>
+        <button class="nav-btn" data-view="gantt">Gantt</button>
+        <button class="nav-btn" data-view="risks">Risk Register</button>
+        <button class="nav-btn" data-view="automations">Automations</button>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="seedBtn" title="Load sample data">🌱 Seed sample data</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section id="view-dashboard" class="view visible">
+        <header class="view-header">
+          <h1>Dashboard</h1>
+          <p class="muted">Week overview, quick gantt, due items, issues, dependencies, and risks.</p>
+        </header>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h2>Quick Gantt (This Week)</h2></div>
+            <div class="card-body">
+              <div id="weeklyGantt"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2>Task Load</h2></div>
+            <div class="card-body">
+              <div id="taskLoad"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-header"><h3>Tasks Due This Week</h3></div>
+            <div class="card-body"><ul id="dueList" class="mini-list"></ul></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Open Issues</h3></div>
+            <div class="card-body"><ul id="issueList" class="mini-list"></ul></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Risks to Review</h3></div>
+            <div class="card-body"><ul id="riskList" class="mini-list"></ul></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-backlog" class="view">
+        <header class="view-header">
+          <h1>Backlog</h1>
+          <div class="backlog-controls">
+            <button id="toggleBacklogMode">Toggle List / Kanban</button>
+            <button id="addTaskBtn">+ New Item</button>
+          </div>
+        </header>
+
+        <div id="backlogListMode" class="card">
+          <table class="table">
+            <thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Due</th><th>Actions</th></tr></thead>
+            <tbody id="backlogTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="kanbanMode" class="kanban hidden">
+          <div class="kanban-col" data-status="backlog"><h3>Backlog</h3><div class="kanban-drop" id="col-backlog"></div></div>
+          <div class="kanban-col" data-status="to-do"><h3>To-Do</h3><div class="kanban-drop" id="col-to-do"></div></div>
+          <div class="kanban-col" data-status="in progress"><h3>In Progress</h3><div class="kanban-drop" id="col-in progress"></div></div>
+          <div class="kanban-col" data-status="blocked"><h3>Blocked</h3><div class="kanban-drop" id="col-blocked"></div></div>
+          <div class="kanban-col" data-status="done"><h3>Done</h3><div class="kanban-drop" id="col-done"></div></div>
+          <div class="kanban-col" data-status="cancelled"><h3>Cancelled</h3><div class="kanban-drop" id="col-cancelled"></div></div>
+        </div>
+      </section>
+
+      <section id="view-pis" class="view">
+        <header class="view-header">
+          <h1>Project Increments & Sprints</h1>
+          <button id="addPIBtn">+ Add PI</button>
+          <button id="addSprintBtn">+ Add Sprint</button>
+          <button id="addTimeOffBtn">+ Add Holiday/PTO</button>
+        </header>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h2>Program Increments</h2></div>
+            <div class="card-body">
+              <table class="table">
+                <thead><tr><th>Name</th><th>Start</th><th>End</th><th></th></tr></thead>
+                <tbody id="piTable"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2>Sprints</h2></div>
+            <div class="card-body">
+              <table class="table">
+                <thead><tr><th>PI</th><th>Name</th><th>Start</th><th>End</th><th></th></tr></thead>
+                <tbody id="sprintTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Time Off</h2></div>
+          <div class="card-body">
+            <table class="table">
+              <thead><tr><th>Date</th><th>Category</th><th>Note</th><th></th></tr></thead>
+              <tbody id="timeoffTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-gantt" class="view">
+        <header class="view-header"><h1>Interactive Gantt</h1></header>
+        <div class="card">
+          <div class="gantt-controls">
+            <label>Zoom:
+              <select id="ganttZoom">
+                <option value="day">Day</option>
+                <option value="week" selected>Week</option>
+                <option value="month">Month</option>
+              </select>
+            </label>
+            <input id="ganttSearch" placeholder="Highlight by text…">
+            <button id="refreshGantt">Refresh</button>
+          </div>
+          <div id="ganttCanvas" class="gantt-canvas"></div>
+        </div>
+      </section>
+
+      <section id="view-risks" class="view">
+        <header class="view-header">
+          <h1>Risk Register</h1>
+          <button id="addRiskBtn">+ New Risk</button>
+        </header>
+        <div class="card">
+          <table class="table">
+            <thead><tr><th>Title</th><th>Impact</th><th>Probability</th><th>Status</th><th>Review</th><th>Mitigation</th><th></th></tr></thead>
+            <tbody id="riskTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="view-automations" class="view">
+        <header class="view-header"><h1>Automations</h1></header>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h2>Available automations</h2></div>
+            <div class="card-body">
+              <div id="automationList" class="automation-list"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2>Output</h2></div>
+            <pre id="automationOutput" class="card-body pre-scroll"></pre>
+          </div>
+        </div>
+        <div class="card tip">
+          <p>Add any <code>.py</code> file into the <code>automations/</code> folder. It will appear here as a button.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/main.js"></script>
+</body>
+</html>
