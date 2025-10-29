@@ -27,7 +27,7 @@
     </aside>
 
     <main class="content">
-      <!-- DASHBOARD -->
+      <!-- DASHBOARD (unchanged markup from previous revision) -->
       <section id="view-dashboard" class="view visible">
         <header class="view-header">
           <h1>Dashboard</h1>
@@ -76,7 +76,7 @@
         </div>
       </section>
 
-      <!-- BACKLOG -->
+      <!-- BACKLOG with modal (unchanged from previous revision) -->
       <section id="view-backlog" class="view">
         <header class="view-header">
           <h1>Backlog</h1>
@@ -85,14 +85,12 @@
             <button id="addTaskBtn">+ New Item</button>
           </div>
         </header>
-
         <div id="backlogListMode" class="card">
           <table class="table">
             <thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Priority</th><th>Planned</th><th>Actual End</th><th>Actions</th></tr></thead>
             <tbody id="backlogTableBody"></tbody>
           </table>
         </div>
-
         <div id="kanbanMode" class="kanban hidden">
           <div class="kanban-col" data-status="backlog"><h3>Backlog</h3><div class="kanban-drop" id="col-backlog"></div></div>
           <div class="kanban-col" data-status="to-do"><h3>To-Do</h3><div class="kanban-drop" id="col-to-do"></div></div>
@@ -101,8 +99,6 @@
           <div class="kanban-col" data-status="done"><h3>Done</h3><div class="kanban-drop" id="col-done"></div></div>
           <div class="kanban-col" data-status="cancelled"><h3>Cancelled</h3><div class="kanban-drop" id="col-cancelled"></div></div>
         </div>
-
-        <!-- Task Modal -->
         <div id="taskModal" class="modal hidden">
           <div class="modal-panel">
             <h3 id="taskModalTitle">New Item</h3>
@@ -114,7 +110,7 @@
               <label>Planned Start<input id="m_planned_start" placeholder="YYYY-MM-DD"></label>
               <label>Planned End<input id="m_planned_end" placeholder="YYYY-MM-DD"></label>
               <label>Actual End<input id="m_actual_end" placeholder="YYYY-MM-DD"></label>
-              <label>Dependencies (IDs, comma)<input id="m_deps" placeholder="e.g. 1,2"></label>
+              <label>Dependencies<select id="m_deps_sel" multiple size="6"></select></label>
             </div>
             <div class="modal-actions">
               <button id="taskSave" class="primary">Save</button>
@@ -124,7 +120,7 @@
         </div>
       </section>
 
-      <!-- PIs & Sprints -->
+      <!-- PIs/Sprints/Timeoff and Gantt markup remain as in prior commit -->
       <section id="view-pis" class="view">
         <header class="view-header">
           <h1>Project Increments & Sprints</h1>
@@ -163,7 +159,6 @@
         </div>
       </section>
 
-      <!-- GANTT -->
       <section id="view-gantt" class="view">
         <header class="view-header"><h1>Interactive Gantt</h1></header>
         <div class="card">
@@ -186,12 +181,9 @@
         </div>
       </section>
 
-      <!-- RISKS -->
       <section id="view-risks" class="view">
-        <header class="view-header">
-          <h1>Risk Register</h1>
-          <button id="addRiskBtn">+ New Risk</button>
-        </header>
+        <header class="view-header"><h1>Risk Register</h1>
+          <button id="addRiskBtn">+ New Risk</button></header>
         <div class="card">
           <table class="table">
             <thead><tr><th>Title</th><th>Impact</th><th>Probability</th><th>Status</th><th>Review</th><th>Mitigation</th><th></th></tr></thead>
@@ -200,7 +192,6 @@
         </div>
       </section>
 
-      <!-- AUTOMATIONS -->
       <section id="view-automations" class="view">
         <header class="view-header"><h1>Automations</h1></header>
         <div class="grid-2">
@@ -221,7 +212,6 @@
       </section>
     </main>
   </div>
-
   <script src="/static/main.js"></script>
 </body>
 </html>

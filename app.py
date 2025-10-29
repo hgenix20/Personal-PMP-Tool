@@ -251,27 +251,28 @@ class App(BaseHTTPRequestHandler):
             conn = get_conn(); cur = conn.cursor()
             for t in ("program_increments","sprints","tasks","risks","time_off"):
                 cur.execute(f"DELETE FROM {t}")
+                cur.execute(f"DELETE FROM sqlite_sequence WHERE name='{t}'")
 
             cur.execute("INSERT INTO program_increments (name,start_date,end_date) VALUES (?,?,?)", ("PI-1","2025-10-20","2025-12-14"))
             pi1 = cur.lastrowid
-            cur.executemany("INSERT INTO sprints (pi_id,name,start_date,end_date) VALUES (?,?,?,?)", [
-                (pi1,"Sprint 1","2025-10-20","2025-11-02"),
-                (pi1,"Sprint 2","2025-11-03","2025-11-16"),
-                (pi1,"Sprint 3","2025-11-17","2025-11-30"),
-                (pi1,"Sprint 4","2025-12-01","2025-12-14"),
-            ])
+            # Insert sprints individually to capture their IDs
+            sprint_ids = []
+            for name, s, e in [("Sprint 1","2025-10-20","2025-11-02"),("Sprint 2","2025-11-03","2025-11-16"),("Sprint 3","2025-11-17","2025-11-30"),("Sprint 4","2025-12-01","2025-12-14")]:
+                cur.execute("INSERT INTO sprints (pi_id,name,start_date,end_date) VALUES (?,?,?,?)", (pi1,name,s,e))
+                sprint_ids.append(cur.lastrowid)
 
             now = now_iso()
+            trows = [
+                ("Design Landing UI", "Create the dashboard hero and KPIs", "to-do", "task", "high", 3, None, "2025-11-02", "2025-10-26", None, "2025-10-26", "2025-11-02", None, pi1, sprint_ids[0], "Kameron", "[]", now, now),
+                ("Build Kanban", "Drag-and-drop columns", "in progress", "task", "medium", 5, None, "2025-11-10", "2025-10-27", None, "2025-10-27", "2025-11-10", None, pi1, sprint_ids[1], "Kameron", "[1]", now, now),
+                ("Bug: Gantt zoom glitch", "Zoom past month throws error", "backlog", "bug", "high", 1, None, "2025-11-05", None, None, None, None, None, pi1, sprint_ids[1], "Kameron", "[]", now, now),
+                ("Integrate Outlook Draft", "Weekly report automation", "blocked", "task", "high", 2, None, "2025-11-07", None, None, None, None, None, pi1, sprint_ids[1], "Kameron", "[1,2]", now, now),
+                ("Dependency: Seed Data", "Provide default datasets", "done", "dep", "low", 1, None, "2025-10-28", "2025-10-27", "2025-10-27", "2025-10-25", "2025-10-27", "2025-10-27", pi1, sprint_ids[0], "Kameron", "[]", now, now),
+            ]
             cur.executemany("""
             INSERT INTO tasks (title,description,status,type,priority,story_points,parent_id,due_date,start_date,end_date,planned_start_date,planned_end_date,actual_end_date,pi_id,sprint_id,assignee,dependencies,created_at,updated_at)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-            """, [
-                ("Design Landing UI", "Create the dashboard hero and KPIs", "to-do", "task", "high", 3, None, "2025-11-02", "2025-10-26", None, "2025-10-26", "2025-11-02", None, pi1, 1, "Kameron", "[]", now, now),
-                ("Build Kanban", "Drag-and-drop columns", "in progress", "task", "medium", 5, None, "2025-11-10", "2025-10-27", None, "2025-10-27", "2025-11-10", None, pi1, 2, "Kameron", "[1]", now, now),
-                ("Bug: Gantt zoom glitch", "Zoom past month throws error", "backlog", "bug", "high", 1, None, "2025-11-05", None, None, None, None, None, pi1, 2, "Kameron", "[]", now, now),
-                ("Integrate Outlook Draft", "Weekly report automation", "blocked", "task", "high", 2, None, "2025-11-07", None, None, None, None, None, pi1, 2, "Kameron", "[1,2]", now, now),
-                ("Dependency: Seed Data", "Provide default datasets", "done", "dep", "low", 1, None, "2025-10-28", "2025-10-27", "2025-10-27", "2025-10-25", "2025-10-27", "2025-10-27", pi1, 1, "Kameron", "[]", now, now),
-            ])
+            """, trows)
 
             cur.executemany("""
             INSERT INTO risks (title,description,impact,probability,mitigation,owner,status,review_date,project,created_at,updated_at)
